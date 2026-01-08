@@ -1,0 +1,31 @@
+name: Vessel Tracking Bot
+on:
+  schedule:
+    - cron: '0 0,6,12,18 * * *'  # Runs at 00:00, 06:00, 12:00, 18:00 UTC
+  workflow_dispatch:            # Allows you to run it manually for testing
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Run tracker
+        run: python tracker.py
+
+      - name: Commit and Push changes
+        run: |
+          git config --global user.name "VesselBot"
+          git config --global user.email "bot@github.com"
+          git add location_log.csv
+          git commit -m "Updated location: $(date)" || exit 0
+          git push
