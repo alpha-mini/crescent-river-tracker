@@ -4,7 +4,7 @@ import csv
 import os
 import re
 
-def get_location():
+def get_detailed_location():
     # Target: Crescent River (IMO: 9800726)
     url = "https://www.vesselfinder.com/vessels/details/9800726"
     headers = {
@@ -15,33 +15,41 @@ def get_location():
         response = requests.get(url, headers=headers, timeout=15)
         html = response.text
         
-        # Regex to find Lat/Lon in the page source
-        lat = re.search(r'lastPosLat":([\d\.-]+)', html).group(1)
-        lon = re.search(r'lastPosLon":([\d\.-]+)', html).group(1)
-        course = re.search(r'course":([\d\.]+)', html).group(1)
-        
-        return {
+        # Extracting data using Regex from the page source
+        def extract(pattern):
+            match = re.search(pattern, html)
+            return match.group(1) if match else "N/A"
+
+        data = {
             "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "lat": lat,
-            "lon": lon,
-            "course": course
+            "lat": extract(r'lastPosLat":([\d\.-]+)'),
+            "lon": extract(r'lastPosLon":([\d\.-]+)'),
+            "course": extract(r'course":([\d\.]+)'),
+            "speed": extract(r'speed":([\d\.]+)'),
+            "status": extract(r'statusText":"([^"]+)"'),
+            "destination": extract(r'destination":"([^"]+)"'),
+            "eta": extract(r'eta":"([^"]+)"'),
+            "draught": extract(r'draught":([\d\.]+)')
         }
+        return data
     except Exception as e:
         print(f"Error fetching data: {e}")
         return None
 
 def save_data(data):
     file_name = "location_log.csv"
+    # Fieldnames must match the keys in the data dictionary
+    fields = ["timestamp", "lat", "lon", "course", "speed", "status", "destination", "eta", "draught"]
     file_exists = os.path.isfile(file_name)
     
     with open(file_name, "a", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=["timestamp", "lat", "lon", "course"])
+        writer = csv.DictWriter(f, fieldnames=fields)
         if not file_exists:
             writer.writeheader()
         writer.writerow(data)
 
 if __name__ == "__main__":
-    loc_data = get_location()
+    loc_data = get_detailed_location()
     if loc_data:
         save_data(loc_data)
-        print(f"Success: {loc_data}")
+        print(f"Logged: {loc_data
