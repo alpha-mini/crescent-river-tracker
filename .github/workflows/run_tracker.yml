@@ -1,7 +1,30 @@
-- name: Install dependencies
+name: Vessel Tracking Bot
+on:
+  schedule:
+    - cron: '0 0,6,12,18 * * *'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install Dependencies
         run: |
-          pip install playwright
+          pip install playwright playwright-stealth
           playwright install chromium
 
       - name: Run tracker
         run: python tracker.py
+
+      - name: Save Results
+        run: |
+          git config --global user.name "VesselBot"
+          git config --global user.email "bot@github.com"
+          git add location_log.csv
+          git commit -m "Update location: $(date)" || exit 0
+          git push
